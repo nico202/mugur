@@ -90,6 +90,13 @@
   :type '(string :tag "name")
   :group 'mugur)
 
+(defcustom mugur-keyboard-keys nil
+  "The number of keys on your keyboard.
+Check that each layout has this number of keys.  This check is
+disabled when nil."
+  :type '(int :tag "keys")
+  :group 'mugur)
+
 (defcustom mugur-layout-name nil
   "The keymap name used in the keymaps matrix.
 Check the 'uint16_t keymaps' matrix in the default keymap.c of
@@ -871,6 +878,23 @@ otherwise."
                    ;; handled above.
                    (cdr mugur-layer))))
              mugur-keymap)))
+    (when mugur-keyboard-keys
+      ;; Assert that each layer has this number of keys
+      (let ((errors
+             (-filter 'identity
+                      (mapcar
+                       (lambda (keymap)
+                         (if (= (length (cdr keymap)) mugur-keyboard-keys)
+                             nil
+                           `(,(car keymap) ,(length (cdr keymap)))))
+                       mugur-keymap))))
+        (when errors
+            (error
+             (mapconcat
+              (lambda (arg)
+                (format "Layer %S have the wrong number of keys (%s instead of %s)"
+                        (car arg) (cadr arg) mugur-keyboard-keys))
+              errors "\n")))))
     ;; Build the returning list of macros and layers, tagging them.
     `((macros ,(reverse macros-list))
       (layers ,qmk-keymap))))
